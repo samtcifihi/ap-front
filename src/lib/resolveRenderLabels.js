@@ -66,6 +66,19 @@ function walkBoard(board, playerNames, t) {
 
 function resolveOneRenderRep(rep, playerNames, t) {
   const out = structuredClone(rep);
+  if (out.kind === "composite" && Array.isArray(out.panels)) {
+    // Composite output: each panel carries its own title and a full render rep.
+    for (const panel of out.panels) {
+      if (panel?.label !== undefined) {
+        panel.label = resolveLabelField(panel.label, playerNames, t);
+      }
+      if (panel?.render && typeof panel.render === "object") {
+        walkBoard(panel.render.board, playerNames, t);
+        walkAreas(panel.render.areas, playerNames, t);
+      }
+    }
+    return out;
+  }
   walkBoard(out.board, playerNames, t);
   walkAreas(out.areas, playerNames, t);
   return out;

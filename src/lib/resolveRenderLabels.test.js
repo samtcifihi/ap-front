@@ -164,4 +164,36 @@ describe("resolveRenderLabels", () => {
       actor: { kind: "seat", seat: 2 },
     });
   });
+  it("resolves panel titles and per-panel area labels in a composite rep", () => {
+    const rep = {
+      kind: "composite",
+      layout: { arrangement: "row" },
+      panels: [
+        {
+          id: "west",
+          label: { textKey: "test:STASH", actor: { kind: "seat", seat: 1 } },
+          render: {
+            board: { style: "squares", width: 1, height: 1 },
+            legend: { A: { name: "piece" } },
+            pieces: "A",
+            areas: [
+              {
+                type: "pieces",
+                label: { textKey: "test:STASH", actor: { kind: "seat", seat: 2 } },
+                pieces: ["A"],
+              },
+            ],
+          },
+        },
+        { id: "east", label: "Plain", render: { board: null, legend: {}, pieces: null } },
+      ],
+    };
+    const resolved = resolveRenderLabels(rep, players, users, t);
+    expect(resolved.kind).to.equal("composite");
+    expect(resolved.panels[0].label).to.equal("Alice's stash");
+    expect(resolved.panels[0].render.areas[0].label).to.equal("Bob's stash");
+    expect(resolved.panels[1].label).to.equal("Plain");
+    // The caller's rep is left as it was.
+    expect(rep.panels[0].label).to.deep.equal({ textKey: "test:STASH", actor: { kind: "seat", seat: 1 } });
+  });
 });

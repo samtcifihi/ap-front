@@ -15,6 +15,7 @@ Since the `1.0.0-beta` release, the version in `package.json` has stayed at `1.0
 
 ### Fixed
 
+- **Composite board rendering:** structured render labels inside composite panels (panel titles and each panel's area labels) are resolved to display strings before drawing, as single-board labels are.
 - **Stack-expanding display:** Re-derive `stackExpanding` from game flags and the current render rep on each sync (and when changing display in settings) so switching from 3D to expanding (e.g. Volcano in Lab) enables stack hover again.
 
 ## [1.0.0-ci] - 2026-10-16
