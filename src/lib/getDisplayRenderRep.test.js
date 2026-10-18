@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { getCompatibleStyles } from "@abstractplay/renderer";
-import { getDisplayRenderRep } from "./getDisplayRenderRep.js";
+import {
+  getDisplayRenderRep,
+  resolveDisplayRenderRep,
+} from "./getDisplayRenderRep.js";
 
 const checkeredRep = {
   board: { style: "squares-checkered", width: 4, height: 4 },
@@ -59,6 +62,28 @@ describe("getDisplayRenderRep", () => {
     });
     expect(display.panels[0].render.board.style).to.equal("vertex");
     expect(display.panels[0].render.options).to.deep.equal(["hide-labels"]);
+  });
+
+  it("resolves each frame of a multi-frame composite render panel by panel, as a lone composite", () => {
+    // A board style swap is checked against the board it swaps, which a composite
+    // keeps in its panels rather than at its top level.
+    const globalMe = {
+      customizations: {
+        test: { render: { board: { style: "vertex" }, options: ["hide-labels"] } },
+      },
+    };
+    const frame = {
+      kind: "composite",
+      layout: { arrangement: "row" },
+      panels: [{ id: "one", render: checkeredRep }],
+    };
+    const lone = resolveDisplayRenderRep(frame, globalMe, "test");
+    expect(lone.panels[0].render.board.style).to.equal("vertex");
+    const display = resolveDisplayRenderRep([frame, frame], globalMe, "test");
+    expect(display).to.have.length(2);
+    for (const shown of display) {
+      expect(shown).to.deep.equal(lone);
+    }
   });
 
   it("swaps hex-of-hex to hex-of-tri when renderer registry allows", () => {

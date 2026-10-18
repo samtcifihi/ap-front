@@ -3,6 +3,8 @@ import {
   applySeatRotateToComposite,
   isCompositeRenderRep,
   isMultiFrameRenderRep,
+  liveRenderFrame,
+  primaryRenderRepForUi,
   stackExpandingForRender,
   usesStackExpanding,
 } from "./renderOutput.js";
@@ -59,6 +61,26 @@ describe("renderOutput", () => {
       usesStackExpanding([miniRep("plain"), miniRep("stacking-expanding")]),
     ).to.equal(true);
     expect(usesStackExpanding(miniRep("plain"))).to.equal(false);
+  });
+
+  it("reads frames of composites by their last frame", () => {
+    const plainComposite = {
+      ...compositeFixture,
+      panels: [{ id: "a", render: miniRep("default") }],
+    };
+    expect(liveRenderFrame([plainComposite, compositeFixture])).to.equal(compositeFixture);
+    expect(liveRenderFrame(compositeFixture)).to.equal(compositeFixture);
+    expect(usesStackExpanding([plainComposite, compositeFixture])).to.equal(true);
+    expect(usesStackExpanding([compositeFixture, plainComposite])).to.equal(false);
+    expect(primaryRenderRepForUi([plainComposite, compositeFixture])).to.equal(
+      compositeFixture.panels[0].render,
+    );
+    expect(primaryRenderRepForUi(compositeFixture)).to.equal(
+      compositeFixture.panels[0].render,
+    );
+    const last = miniRep("plain");
+    expect(primaryRenderRepForUi([miniRep(), last])).to.equal(last);
+    expect(primaryRenderRepForUi(null)).to.equal(null);
   });
 
   it("applySeatRotateToComposite bumps panel rotate", () => {

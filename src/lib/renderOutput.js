@@ -20,18 +20,27 @@ export function isMultiFrameRenderRep(rep) {
   return Array.isArray(rep);
 }
 
+/**
+ * The frame on show by default: the last of a multi-frame render, or the render itself.
+ * Either may be a single board or a composite.
+ * @param {import('@abstractplay/gameslib').APRenderGameOutput | null | undefined} rep
+ */
+export function liveRenderFrame(rep) {
+  return Array.isArray(rep) ? rep.at(-1) : rep;
+}
+
 /** @param {import('@abstractplay/gameslib').APRenderGameOutput | null | undefined} rep */
 export function usesStackExpanding(rep) {
-  if (rep == null) {
+  const frame = liveRenderFrame(rep);
+  if (frame == null) {
     return false;
   }
-  if (isCompositeRenderRep(rep)) {
-    return rep.panels.some(
+  if (isCompositeRenderRep(frame)) {
+    return frame.panels.some(
       (p) => p.render?.renderer === "stacking-expanding",
     );
   }
-  const frame = Array.isArray(rep) ? rep.at(-1) : rep;
-  return frame?.renderer === "stacking-expanding";
+  return frame.renderer === "stacking-expanding";
 }
 
 /**
@@ -107,14 +116,12 @@ export function prepareDisplayRenderRep(rawRep, globalMe, metaGame) {
  * @param {import('@abstractplay/gameslib').APRenderGameOutput | null | undefined} rep
  */
 export function primaryRenderRepForUi(rep) {
-  if (rep == null) {
+  const frame = liveRenderFrame(rep);
+  if (frame == null) {
     return null;
   }
-  if (isCompositeRenderRep(rep)) {
-    return rep.panels[0]?.render ?? null;
+  if (isCompositeRenderRep(frame)) {
+    return frame.panels[0]?.render ?? null;
   }
-  if (Array.isArray(rep)) {
-    return rep.at(-1) ?? null;
-  }
-  return rep;
+  return frame;
 }

@@ -118,10 +118,8 @@ export function resolveDisplayRenderRep(rawRep, globalMe, metaGame) {
     };
   }
   if (Array.isArray(rawRep)) {
-    return rawRep.map((r) => {
-      const settings = resolveEffectiveRenderSettings(globalMe, metaGame, r);
-      return getDisplayRenderRep(r, settings);
-    });
+    // Frames: each a single board, or a composite whose panels take settings of their own.
+    return rawRep.map((r) => resolveDisplayRenderRep(r, globalMe, metaGame));
   }
   const settings = resolveEffectiveRenderSettings(globalMe, metaGame, rawRep);
   return getDisplayRenderRep(rawRep, settings);

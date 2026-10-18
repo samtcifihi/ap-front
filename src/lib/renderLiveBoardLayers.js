@@ -19,7 +19,8 @@ function attachOffscreenContainer() {
 }
 
 /**
- * Render board SVG layer(s) off-screen (caller owns returned DOM nodes).
+ * Render board SVG layer(s) off-screen (caller owns returned DOM nodes): one per frame,
+ * each a single board or a composite. Only the last, live frame takes clicks and hover.
  *
  * @returns {{ layers: (Element | null)[], boardRenderIndex: number }}
  */
@@ -37,65 +38,60 @@ export function renderLiveBoardLayers({
   onStackColumnHover,
 }) {
   const layers = [];
-
-  if (isCompositeRenderRep(renderrep)) {
-    let displayRep = prepareDisplayRenderRep(renderrep, globalMe, metaGame);
-    displayRep = applySeatRotateToComposite(displayRep, seatRotate);
-    const container = attachOffscreenContainer();
-    const layerOptions = { ...baseOptions };
-    delete layerOptions.rotate;
-    applyColourOpts(layerOptions);
-    const primaryPanel = renderrep.panels[0]?.render;
-    if (primaryPanel) {
-      applyGlyphMap(layerOptions, primaryPanel);
-    }
-    const primarySettings = resolveEffectiveRenderSettings(
-      globalMe,
-      metaGame,
-      primaryPanel ?? {},
-    );
-    applyRenderSettingsToOptions(layerOptions, primarySettings);
-    if (canBoardClick) {
-      layerOptions.boardClick = (panelId, row, col, piece) => {
-        onBoardClick(row, col, piece, panelId);
-      };
-    }
-    if (stackExpanding && onStackColumnHover) {
-      layerOptions.boardHover = (panelId, row, col) => {
-        onStackColumnHover(col, row, panelId);
-      };
-    }
-    renderComposite(displayRep, { ...layerOptions, divelem: container });
-    layers.push(container.firstChild);
-    document.body.removeChild(container);
-    return { layers, boardRenderIndex: 0 };
-  }
-
   const frames = Array.isArray(renderrep) ? [...renderrep] : [renderrep];
   for (let i = 0; i < frames.length; i++) {
     const rawRep = frames[i];
-    const { displayRep, renderSettings } = prepareBoardRender(
-      rawRep,
-      globalMe,
-      metaGame,
-    );
-    const layerOptions = { ...baseOptions, rotate: seatRotate };
-    applyColourOpts(layerOptions);
-    applyGlyphMap(layerOptions, rawRep);
-    applyRenderSettingsToOptions(layerOptions, renderSettings);
     const isTopFrame = i === frames.length - 1;
-    if (stackExpanding && isTopFrame && onStackColumnHover) {
-      layerOptions.boardHover = (row, col) => {
-        onStackColumnHover(col, row);
-      };
-    }
-    if (canBoardClick && isTopFrame) {
-      layerOptions.boardClick = (row, col, piece) => {
-        onBoardClick(row, col, piece);
-      };
-    }
     const container = attachOffscreenContainer();
-    render(displayRep, { ...layerOptions, divelem: container });
+    if (isCompositeRenderRep(rawRep)) {
+      let displayRep = prepareDisplayRenderRep(rawRep, globalMe, metaGame);
+      displayRep = applySeatRotateToComposite(displayRep, seatRotate);
+      const layerOptions = { ...baseOptions };
+      delete layerOptions.rotate;
+      applyColourOpts(layerOptions);
+      const primaryPanel = rawRep.panels[0]?.render;
+      if (primaryPanel) {
+        applyGlyphMap(layerOptions, primaryPanel);
+      }
+      const primarySettings = resolveEffectiveRenderSettings(
+        globalMe,
+        metaGame,
+        primaryPanel ?? {},
+      );
+      applyRenderSettingsToOptions(layerOptions, primarySettings);
+      if (canBoardClick && isTopFrame) {
+        layerOptions.boardClick = (panelId, row, col, piece) => {
+          onBoardClick(row, col, piece, panelId);
+        };
+      }
+      if (stackExpanding && isTopFrame && onStackColumnHover) {
+        layerOptions.boardHover = (panelId, row, col) => {
+          onStackColumnHover(col, row, panelId);
+        };
+      }
+      renderComposite(displayRep, { ...layerOptions, divelem: container });
+    } else {
+      const { displayRep, renderSettings } = prepareBoardRender(
+        rawRep,
+        globalMe,
+        metaGame,
+      );
+      const layerOptions = { ...baseOptions, rotate: seatRotate };
+      applyColourOpts(layerOptions);
+      applyGlyphMap(layerOptions, rawRep);
+      applyRenderSettingsToOptions(layerOptions, renderSettings);
+      if (stackExpanding && isTopFrame && onStackColumnHover) {
+        layerOptions.boardHover = (row, col) => {
+          onStackColumnHover(col, row);
+        };
+      }
+      if (canBoardClick && isTopFrame) {
+        layerOptions.boardClick = (row, col, piece) => {
+          onBoardClick(row, col, piece);
+        };
+      }
+      render(displayRep, { ...layerOptions, divelem: container });
+    }
     layers.push(container.firstChild);
     document.body.removeChild(container);
   }
